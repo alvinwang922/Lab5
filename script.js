@@ -1,11 +1,113 @@
 // script.js
 
 const img = new Image(); // used to load image from <input> and draw to canvas
+const canvas = document.getElementById('user-image');
+const context = canvas.getContext('2d');
+const newFile = document.getElementById('image-input');
+const text = document.getElementById('generate-meme');
+const clear = document.getElementById('button-group').querySelectorAll('button')[0];
+const readText = document.getElementById('button-group').querySelectorAll('button')[1];
+const submit = text.querySelectorAll('button')[0];
+const volumeGroup = document.getElementById('volume-group');
+const voiceSelection = document.getElementById('voice-selection');
+const volumeSlider = volumeGroup.querySelectorAll('input')[0];
+const volume = volumeGroup.querySelectorAll('img')[0];
+const synth = window.speechSynthesis;
+
+volumeGroup.addEventListener('input', () => {
+  if (volumeSlider.value <= 100 && volumeSlider.value >= 67) {
+    volume.src = 'icons/volume-level-3.svg';
+    volume.alt = 'Level 3';
+  }
+  else if (volumeSlider.value <= 66 && volumeSlider.value >= 34) {
+    volume.src = 'icons/volume-level-2.svg';
+    volume.alt = 'Level 2';
+  }
+  else if (volumeSlider.value <= 33 && volumeSlider.value >= 1) {
+    volume.src = 'icons/volume-level-1.svg';
+    volume.alt = 'Level 1';
+  }
+  else if (volumeSlider.value == 0) {
+    volume.src = 'icons/volume-level-0.svg';
+    volume.alt = 'Level 0';
+  }
+});
+
+function populateVoiceList() {
+  voices = synth.getVoices();
+
+  for (var i = 0; i < voices.length ; i++) {
+    var option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+
+    if (voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+    voiceSelection.appendChild(option);
+  }
+}
+
+var voices = [];
+
+readText.addEventListener('click', () => {
+  var top = new SpeechSynthesisUtterance(document.getElementById('text-top').value);
+  var bottom = new SpeechSynthesisUtterance(document.getElementById('text-bottom').value);
+  var selectedOption = voiceSelection.selectedOptions[0].getAttribute('data-name');
+  for (var i = 0; i < voices.length ; i++) {
+    if (voices[i].name === selectedOption) {
+      top.voice = voices[i];
+      bottom.voice = voices[i];
+    }
+  }
+  top.volume = volumeSlider.value / 100;
+  bottom.volume = volumeSlider.value / 100;
+  synth.speak(top);
+  synth.speak(bottom);
+})
+
+clear.addEventListener('click', () => {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  text.reset();
+  submit.disabled = false;
+  clear.disabled = true;
+  readText.disabled = true;
+});
+
+text.addEventListener('submit', (event) => {
+  var top = document.getElementById('text-top').value;
+  var bottom = document.getElementById('text-bottom').value;
+  context.textAlign = 'center';
+  context.font = '50px Impact';
+  context.fillStyle = 'white';
+  context.fillText(top, canvas.width / 2, canvas.height / 8);
+  context.fillText(bottom, canvas.width / 2, canvas.height * 93 / 100);
+  submit.disabled = true;
+  clear.disabled = false;
+  readText.disabled = false;
+  voiceSelection.disabled = false;
+  populateVoiceList();
+  event.preventDefault();
+});
+
+newFile.addEventListener('change', files);
+function files() {
+  let file = newFile.files[0];
+  img.src = URL.createObjectURL(file);
+  img.alt = file.name;
+};
 
 // Fires whenever the img object loads a new image (such as with img.src =)
 img.addEventListener('load', () => {
   // TODO
-
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = 'black';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  text.reset();
+  const d = getDimmensions(canvas.width, canvas.height, img.width, img.height);
+  context.drawImage(img, d.startX, d.startY, d.width, d.height);
   // Some helpful tips:
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
